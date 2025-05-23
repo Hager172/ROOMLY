@@ -54,6 +54,7 @@ namespace ROOMLY.Controllers
             }
             var user = new ApplicationUser()
             {
+                
                 FullName = model.FullName,
                 Email = model.Email,
                 UserName = model.Email.Split('@')[0],
@@ -72,6 +73,7 @@ namespace ROOMLY.Controllers
 
             var userdto = new UserDTO()
             {
+                userId = user.Id,
                 Email = model.Email,
                 FullName = model.FullName,
                 Token =await GenerateJwtToken(user,userManager)
@@ -104,6 +106,7 @@ namespace ROOMLY.Controllers
             }
             var userdto = new UserDTO()
             {
+                userId=user.Id,
                 Email = user.Email,
                 FullName = user.FullName,
                 Token = await GenerateJwtToken(user,userManager)
@@ -123,7 +126,8 @@ namespace ROOMLY.Controllers
     {
         new Claim(ClaimTypes.NameIdentifier, user.Id),
         new Claim(ClaimTypes.Email, user.Email),
-        new Claim(ClaimTypes.Name, user.FullName)
+        new Claim(ClaimTypes.Name, user.FullName),
+
     };
 
             // جلب رولات المستخدم

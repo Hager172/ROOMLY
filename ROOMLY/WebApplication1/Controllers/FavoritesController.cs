@@ -74,9 +74,11 @@ namespace ROOMLY.Controllers
                 return Unauthorized();
 
             var favorites = uOW.favoriteRepo.GetFavoritesByUserId(userId);
-            var favoriteDtos = map.Map<List<AddFavoriteDto>>(favorites);
+
+            var favoriteDtos = map.Map<List<FavoriteWithRoomDto>>(favorites);
 
             return Ok(favoriteDtos);
         }
+
     }
 }

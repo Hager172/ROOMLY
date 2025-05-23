@@ -4,6 +4,7 @@ using ROOMLY.DTOs.RoomDTO;
 using WebApplication1.models;
 using ROOMLY.UnitOfwork;
 using ROOMLY.models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ROOMLY.Controllers
 {
@@ -20,6 +21,7 @@ namespace ROOMLY.Controllers
             this.map = map;
         }
 
+       
         [HttpGet("GetRooms")]
         public IActionResult GetAllRooms()
         {

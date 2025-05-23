@@ -23,36 +23,49 @@ namespace ROOMLY.Controllers
             this.mapper = mapper;
             this.unitOf = unitOf;
         }
-
-        #region Get All Users (Admin Only)
+        //[Authorize(Roles ="Admin")]
+        #region Get All Users (Admin only)
         [HttpGet]
-        //[Authorize(Roles = "Admin")]
-        public IActionResult GetAllUsers()
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllUsers()
         {
             var users = userManager.Users.ToList();
-            var userDtos = mapper.Map<List<UsersDTO>>(users);
+            var userDtos = new List<UsersDTO>();
+
+            foreach (var user in users)
+            {
+                var userDto = mapper.Map<UsersDTO>(user);
+                var roles = await userManager.GetRolesAsync(user);
+                userDto.Role = roles.FirstOrDefault(); // ✅ إضافة الدور
+                userDtos.Add(userDto);
+            }
+
             return Ok(userDtos);
         }
         #endregion
 
         #region Get User By Id (Admin or User himself)
         [HttpGet("{id}")]
-        //[Authorize(Roles = "Admin,User")]
+        [Authorize(Roles = "Admin,User")]
         public async Task<IActionResult> GetUserById(string id)
         {
             var user = await userManager.FindByIdAsync(id);
             if (user == null) return NotFound("User not found");
 
-            // Allow only admin or the user himself
+            // السماح فقط للأدمن أو لنفس المستخدم
             if (User.IsInRole("Admin") || User.Identity?.Name == user.UserName)
             {
                 var userDto = mapper.Map<UsersDTO>(user);
+                var roles = await userManager.GetRolesAsync(user);
+                userDto.Role = roles.FirstOrDefault(); // ✅ إضافة الدور
+
                 return Ok(userDto);
             }
 
-            return Forbid("You are not allowed to access this resource.");
+            return Forbid();
         }
         #endregion
+
 
         #region Get Current User Profile (User Only)
         [HttpGet("profile")]
@@ -67,35 +80,56 @@ namespace ROOMLY.Controllers
         }
         #endregion
 
-        #region Update User (User himself or Admin for some fields)
         [HttpPut("{id}")]
-        //[Authorize(Roles = "Admin,User")]
-        public async Task<IActionResult> UpdateUser(string id, UpdateUserDto userDto)
+        [Authorize(Roles = "Admin")] // فقط الأدمن يقدر يحدث
+        public async Task<IActionResult> UpdateUser(string id, [FromBody] UsersDTO updatedUser)
         {
+            if (id != updatedUser.Id)
+                return BadRequest("User ID mismatch");
+
             var user = await userManager.FindByIdAsync(id);
-            if (user == null) return NotFound("User not found");
+            if (user == null)
+                return NotFound();
 
-            // Allow only admin or the user himself
-            //if (User.IsInRole("Admin") || User.Identity?.Name == user.UserName)
-            //{
-                user.FullName = userDto.FullName ?? user.FullName;
-                user.Address = userDto.Address ?? user.Address;
-                user.PhoneNumber = userDto.PhoneNumber ?? user.PhoneNumber;
+            // تحديث الحقول الأساسية
+            user.FullName = updatedUser.FullName;
+            user.Address = updatedUser.Address;
+            user.Email = updatedUser.Email;
+            user.PhoneNumber = updatedUser.PhoneNumber;
+            user.UserName = updatedUser.UserName;
 
-                //if (User.IsInRole("Admin"))
-                //{
-                    user.Email = userDto.Email ?? user.Email;
-                //}
+            // تحديث البريد الإلكتروني مع التأكد من تحديث UserManager أيضاً
+            var setEmailResult = await userManager.SetEmailAsync(user, updatedUser.Email);
+            if (!setEmailResult.Succeeded)
+                return BadRequest(setEmailResult.Errors);
 
-                var result = await userManager.UpdateAsync(user);
-                if (!result.Succeeded) return BadRequest(result.Errors);
+            // تحديث اسم المستخدم لو محتاج (اختياري)
+            var setUserNameResult = await userManager.SetUserNameAsync(user, updatedUser.UserName);
+            if (!setUserNameResult.Succeeded)
+                return BadRequest(setUserNameResult.Errors);
 
-                return NoContent();
-            //}
+            // تحديث الرول:
+            var currentRoles = await userManager.GetRolesAsync(user);
+            // إزالة المستخدم من كل الرولات القديمة
+            var removeResult = await userManager.RemoveFromRolesAsync(user, currentRoles);
+            if (!removeResult.Succeeded)
+                return BadRequest(removeResult.Errors);
 
-            //return Forbid("You are not allowed to access this resource.");
+            // إضافة الرول الجديد
+            var addRoleResult = await userManager.AddToRoleAsync(user, updatedUser.Role);
+            if (!addRoleResult.Succeeded)
+                return BadRequest(addRoleResult.Errors);
+
+            // تحديث بيانات المستخدم الأساسية
+            var updateResult = await userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                return BadRequest(updateResult.Errors);
+            }
+
+            return NoContent();
         }
-        #endregion
+
 
         #region Delete User (Admin Only)
         [HttpDelete("{id}")]
@@ -149,22 +183,6 @@ namespace ROOMLY.Controllers
 
         #endregion
 
-        //#region Reset Password (For User)
-        //[HttpPost("ResetPassword")]
-        //[AllowAnonymous]
-        //public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto model)
-        //{
-        //    var user = await userManager.FindByEmailAsync(model.Email);
-        //    if (user == null) return BadRequest("Invalid Request");
 
-        //    var result = await userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
-        //    if (!result.Succeeded)
-        //    {
-        //        return BadRequest(result.Errors);
-        //    }
-
-        //    return Ok("Password reset successful");
-        //}
-        //#endregion
     }
 }

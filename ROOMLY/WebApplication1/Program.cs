@@ -17,7 +17,20 @@ namespace WebApplication1
     {
         public static async Task Main(string[] args)
         {
+
             var builder = WebApplication.CreateBuilder(args);
+            var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy(name: MyAllowSpecificOrigins,
+                                  policy =>
+                                  {
+                                      policy.WithOrigins("http://localhost:4200") // فرونت أنجيولر
+                                            .AllowAnyHeader()
+                                            .AllowAnyMethod();
+                                  });
+            });
 
             // Add services to the container.
             builder.Services.AddControllers();
@@ -84,6 +97,8 @@ namespace WebApplication1
             await InitializeDatabaseAsync(app);
 
             app.UseHttpsRedirection();
+            app.UseCors(MyAllowSpecificOrigins);
+
             app.UseStaticFiles();
 
             app.UseAuthentication();

@@ -17,7 +17,7 @@ namespace ROOMLY.DTOs.RoomDTO
 
         //public IFormFile MainImage { get; set; }
 
-        public RoomStatus Status { get; set; }
+        public int Status { get; set; }
 
     }
 }

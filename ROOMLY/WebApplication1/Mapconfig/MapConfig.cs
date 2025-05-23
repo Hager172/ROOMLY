@@ -17,9 +17,13 @@ namespace ROOMLY.Mapconfig
 
 
                 des.RoomTypeName = src.RoomType.Name;
-                des.Status = src.Status;
-              
+                des.Status = (int)src.Status;
+
+
             }).ReverseMap();
+
+            CreateMap<ReservationCreateDto, Reservation>().ReverseMap();
+            CreateMap<ReservationCreateUserDto, Reservation>();
 
 
             CreateMap<Room,RoomCreateDto>().ReverseMap();
@@ -31,6 +35,10 @@ namespace ROOMLY.Mapconfig
             CreateMap<Room, RoomDetailsDto>()
     .ForMember(dest => dest.GalleryImages, opt => opt.MapFrom(src => src.RoomImages.Select(i => i.ImageUrl).ToList()));
 
+            CreateMap<Favourite, FavoriteWithRoomDto>()
+    .ForMember(dest => dest.RoomNumber, opt => opt.MapFrom(src => src.Room.RoomNumber))
+    .ForMember(dest => dest.RoomTypeName, opt => opt.MapFrom(src => src.Room.RoomType.Name))
+    .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Room.Status));
 
 
             //mapping reservation

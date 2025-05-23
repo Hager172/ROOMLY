@@ -9,8 +9,8 @@ namespace WebApplication1.models
         // Primary Key
         [Key]
         public int ResevationId { get; set; }
+        
 
-       
         public DateTime CheckInDate { get; set; }
         public DateTime CheckOutDate { get; set; }
 
